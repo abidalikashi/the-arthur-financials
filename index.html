@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Arthur — financial model</title>
+<meta name="description" content="Working financial model for The Arthur, a North Palm Beach motel-to-lodge concept. Three cases: 96 keys, 72 keys, and 45 keys.">
+<style>
+  :root {
+    --bg: #f4f0e8;
+    --paper: #fbf8f2;
+    --ink: #1c2430;
+    --muted: #5e584f;
+    --line: #e3dacb;
+    --navy: #1b3a4b;
+    --palm: #2c5c4e;
+    --clay: #8d4638;
+    --brass: #8a6a32;
+    --chip: #efe8db;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.5 "Segoe UI", "Helvetica Neue", sans-serif;
+  }
+  header, main, footer { width: min(1100px, calc(100% - 32px)); margin: 0 auto; }
+  header { padding: 36px 0 8px; }
+  .kicker {
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-size: 12px;
+    color: var(--muted);
+    margin: 0 0 8px;
+  }
+  h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 500;
+    font-size: clamp(32px, 5vw, 46px);
+    line-height: 1.1;
+    margin: 0 0 10px;
+  }
+  h2 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 500;
+    font-size: 26px;
+    margin: 36px 0 8px;
+  }
+  h3 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 500;
+    font-size: 20px;
+    margin: 26px 0 8px;
+  }
+  p { margin: 0 0 10px; }
+  .lede, .note, .fine { color: var(--muted); }
+  .fine { font-size: 13px; }
+  .warn, .ok, .bad {
+    border: 1px solid var(--line);
+    background: var(--paper);
+    padding: 14px 16px;
+    margin: 16px 0;
+  }
+  .warn { border-left: 4px solid var(--brass); }
+  .ok { border-left: 4px solid var(--palm); }
+  .bad { border-left: 4px solid var(--clay); }
+  .switcher {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: rgba(244, 240, 232, 0.94);
+    backdrop-filter: blur(8px);
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+    margin-top: 18px;
+  }
+  button {
+    font: inherit;
+    border: 1px solid var(--navy);
+    background: transparent;
+    color: var(--navy);
+    padding: 8px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  button.on { background: var(--navy); color: #fbf8f2; }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin: 16px 0;
+  }
+  .stat {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    padding: 12px 14px;
+  }
+  .stat b {
+    display: block;
+    font-family: Georgia, serif;
+    font-size: 26px;
+    font-weight: 500;
+    line-height: 1.15;
+  }
+  .stat span { color: var(--muted); font-size: 13px; }
+  .stat.good b { color: var(--palm); }
+  .stat.bad b { color: var(--clay); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .chart { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 8px 0 12px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.total td { font-weight: 650; }
+  .scroll { overflow-x: auto; }
+  details { margin: 28px 0 12px; }
+  summary { cursor: pointer; font-family: Georgia, serif; font-size: 22px; }
+  footer { padding: 8px 0 40px; }
+  @media (max-width: 800px) {
+    .stats, .grid2 { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 560px) {
+    .stats, .grid2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <p class="kicker">North Palm Beach · working model · October 2026</p>
+  <h1>The Arthur</h1>
+  <p class="lede">Three ways to underwrite the same motel. The buttons change the case. The comparison at the top stays put, because that is the decision.</p>
+  <div class="warn">
+    <strong>The 45-key case does not clear a normal development test.</strong>
+    A studs-out rebuild at the marketing plan’s 68% occupancy and $375 rate costs about $27.9 million and earns about $1.3 million of stabilized profit. That is a 4.7% yield, and the permanent loan comes up about $5.5 million short. The case a lender can take is 96 keys.
+  </div>
+</header>
+<main>
+  <h2>Yield on cost</h2>
+  <p class="fine">Stabilized profit divided by total project cost. The exit cap used to value the hotel is 7.5%. The development hurdle used here is 9%.</p>
+  <div id="yield-chart"></div>
+  <div class="scroll" id="compare"></div>
+  <p class="fine">Purchase price is $9.8 million in every case. A positive refinance is cash returned at the start of year 3. A negative number is extra equity the deal still needs. The return treats that shortfall as a cash call.</p>
+
+  <div class="switcher" id="switcher">
+    <button type="button" data-case="keep">Lender case · 96 keys</button>
+    <button type="button" data-case="mid">Design compromise · 72 keys</button>
+    <button type="button" data-case="team">Team case · 45 keys</button>
+  </div>
+  <p id="note"></p>
+  <div class="stats" id="stats"></div>
+  <div id="detail"></div>
+
+  <h2>Hand-off to the rest of the plan</h2>
+  <p class="fine">These figures do not change when you switch cases. They are all three answers, side by side, for marketing and operations.</p>
+  <div class="scroll" id="handoff"></div>
+  <p class="fine">Guest checkout for one night, with the marketing plan’s 6% tourist tax and 6.5% sales tax added together and no resort fee: $253.13 at $225, $360.00 at $320, and $421.88 at $375. Planning open date is October 2028, assuming a closing in early 2027 and an 18-month project.</p>
+
+  <details>
+    <summary>Sources, and what is still a guess</summary>
+    <h3>Property</h3>
+    <p>757 US Highway 1, North Palm Beach. County folio 68-43-42-16-06-001-0010, as compiled by Hawkins Commercial Realty and LoopNet from Palm Beach County records: 109 units, 40,062 square feet, 2 stories, built 1973, lot about 2.45 acres, zoning C-MU. 2023 county total $6,364,638. Last sale November 1, 1996, at $1,937,500. The $9.8 million price is a judgment above that capped assessment and far below the April 2026 Embassy Suites Palm Beach Gardens trade at $212,500 per key.</p>
+    <h3>Market, debt, tax, insurance</h3>
+    <p>CBRE midyear 2026 U.S. hotel outlook: occupancy 62.8%, ADR growth 1.7%. CBRE’s South Florida note: West Palm Beach 2025 RevPAR about flat. Construction pricing sits in the September 2026 bank and debt-fund range of about 6.25% to 8.75% at 55% to 70% of cost. The 7.5% cap is inside the 2026 select-service Sun Belt band of roughly 7.25% to 8.75%. Insurance uses $1.10 per $100 of insured value, between published inland and coastal Florida ranges. Millage totals 23.4081 from Palm Beach County’s 2025 final and 2026 proposed rates, including the village at 7.4000, county, fire, library, both school levies, Children’s Services at 0.4908, and the Health Care District at 0.6561. Deed stamps are $0.70 per $100. Mortgage stamps are $0.35 per $100. Intangible tax is 0.2%.</p>
+    <h3>Still a guess</h3>
+    <p>The seller’s price and trailing profit. A building-condition report. The flood-zone letter on FEMA panel 12099C0383F. Any Wyndham termination fee, modeled at $350,000. A liquor license, modeled at $150,000. Contractor bids. Whether the village requires a lift. A rate audit of Jupiter Beach Resort, Wyndham Grand Jupiter, The Pointe, Hampton Inn Jupiter/Juno Beach, and Holiday Inn Express North Palm Beach.</p>
+  </details>
+</main>
+<footer>
+  <p class="fine">Planning model for the capstone, October 4, 2026. Not an appraisal, a loan quote, or a contractor bid. The page is public because a free GitHub account can only publish Pages from a public repository.</p>
+</footer>
+<script>
+const SF = 40062, MILL = 23.4081, PURCHASE = 9800000;
+const CASES = [
+  { id:"keep", name:"Lender case", keys:96, psf:130, lines:[
+    ["Selective demolition",8],["MEP replacement",32],["Roof, envelope, impact openings",18],
+    ["Interior finishes",28],["Pool, courtyard, landscape, US-1 screen",24],
+    ["Life safety, ADA, site and parking",12],["General conditions and GC fee",8]
+  ], ffePerKey:16000, pubFFE:550000, occR:[0.58,0.64,0.70], adrR:[200,215,225], fb:0.08, fbCost:0.62, por:46, tiv:11000000, taxable:10000000,
+    note:"Keeps most of the 109 county-listed units. This follows the Amigo lesson: renovate the motel and spend the money on the courtyard, rather than cutting the room count in half. The $225 rate sits below recent Palm Beach ADR, so it is the conservative price." },
+  { id:"mid", name:"Design compromise", keys:72, psf:175, lines:[
+    ["Demolition and some room combination",18],["MEP replacement",48],["Roof, envelope, impact openings",28],
+    ["Interior finishes",36],["Pool, courtyard, landscape, US-1 screen",22],
+    ["Life safety, ADA, site and parking",15],["General conditions and GC fee",8]
+  ], ffePerKey:25000, pubFFE:450000, occR:[0.53,0.60,0.66], adrR:[290,305,320], fb:0.10, fbCost:0.68, por:58, tiv:12500000, taxable:11500000,
+    note:"Fewer, larger rooms, without the cut from 109 to 45. The $320 stabilized rate is a premium to recent county ADR near $270 and still needs a rate audit." },
+  { id:"team", name:"Team case", keys:45, psf:250, lines:[
+    ["Demolition and room combination",22],["Full MEP replacement",68],["Roof, envelope, impact openings",38],
+    ["Interior finishes",52],["Pool, courtyard, landscape, US-1 screen",32],
+    ["Life safety, ADA, site and parking",23],["General conditions and GC fee",15]
+  ], ffePerKey:35000, pubFFE:425000, occR:[0.55,0.62,0.68], adrR:[340,360,375], fb:0.09, fbCost:0.70, por:72, tiv:15000000, taxable:13500000,
+    note:"This is the marketing plan’s 45 keys, 68% occupancy, and $375 rate, on a studs-out budget. Philip Sterling’s interview did not validate the key cut, the rate, or a $20–30 million basis." }
+];
+
+function pmtAnnual(rate, years, principal) {
+  const r = rate / 12, n = years * 12;
+  return principal * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1) * 12;
+}
+function balanceAfter(rate, yearsAm, principal, yearsPaid) {
+  const r = rate / 12, n = yearsAm * 12, k = yearsPaid * 12;
+  const m = principal * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
+  return principal * Math.pow(1 + r, k) - m * (Math.pow(1 + r, k) - 1) / r;
+}
+function irr(cfs) {
+  let rate = 0.1;
+  for (let i = 0; i < 80; i++) {
+    let npv = 0, d = 0;
+    for (let t = 0; t < cfs.length; t++) {
+      npv += cfs[t] / Math.pow(1 + rate, t);
+      if (t > 0) d -= t * cfs[t] / Math.pow(1 + rate, t + 1);
+    }
+    if (Math.abs(d) < 1e-12) return null;
+    const next = rate - npv / d;
+    if (!isFinite(next) || next < -0.9) return null;
+    if (Math.abs(next - rate) < 1e-8) return next;
+    rate = next;
+  }
+  return rate;
+}
+function run(p) {
+  const hard = p.psf * SF, cont = hard * 0.12;
+  const ffe = p.ffePerKey * p.keys + p.pubFFE, ose = 3200 * p.keys, tech = 160000 + 700 * p.keys;
+  const ae = hard * 0.075, permits = 150000, reports = 90000, legal = 150000, liquor = 150000;
+  const builders = (hard + cont) * 0.011, dev = 180000, test = 40000, franchise = 350000;
+  const prePayroll = 160000, preMkt = 320000, inv = 1800 * p.keys, wc = 350000;
+  const deed = PURCHASE * 0.007;
+  const title = 575 + 4500 + 10000 + Math.max(0, PURCHASE - 5000000) / 1000 * 2.25;
+  const escrow = 8000;
+  const taxCarry = PURCHASE * MILL / 1000 * (18 / 12);
+  const C = PURCHASE + deed + title + escrow + hard + cont + ffe + ose + tech + ae + permits + reports + legal + liquor + builders + dev + test + franchise + prePayroll + preMkt + inv + wc + taxCarry;
+  const intFactor = 0.5 * 0.0725 * (18 / 12);
+  const finRate = 0.01 + 0.0035 + 0.002 + intFactor;
+  const lenderFlat = 35000;
+  const tpc = (C + lenderFlat) / (1 - 0.6 * finRate);
+  const loan = 0.6 * tpc, equity = tpc - loan;
+  const orig = 0.01 * loan, doc = 0.0035 * loan, intang = 0.002 * loan, intRes = intFactor * loan;
+  const avail = p.keys * 365, years = [];
+  for (let y = 1; y <= 10; y++) {
+    const occ = y === 1 ? p.occR[0] : y === 2 ? p.occR[1] : p.occR[2];
+    const adrBase = y === 1 ? p.adrR[0] : y === 2 ? p.adrR[1] : p.adrR[2];
+    const adr = adrBase * Math.pow(1.017, Math.max(0, y - 3));
+    const sold = avail * occ, rooms = sold * adr, fb = rooms * p.fb, other = rooms * 0.02, tr = rooms + fb + other;
+    const infl = Math.pow(1.025, y - 3);
+    const roomsExp = sold * p.por * infl;
+    const comm = rooms * (y === 1 ? 0.145 : y === 2 ? 0.13 : 0.117);
+    const fbExp = fb * p.fbCost;
+    const ag = 200000 * infl + tr * 0.026;
+    const mkt = rooms * (y === 1 ? 0.10 : y === 2 ? 0.08 : 0.065);
+    const pom = (80000 + 1600 * p.keys) * infl;
+    const util = (1200 * p.keys + 35000) * infl;
+    const it = 20000 * infl;
+    const gop = tr - roomsExp - comm - fbExp - other * 0.25 - ag - mkt - pom - util - it;
+    const mgmt = tr * 0.03;
+    const ins = (p.tiv * 0.011 + 25000) * infl;
+    const tax = (p.taxable * MILL / 1000 + Math.max(0, ffe - 25000) * MILL / 1000 + 10000) * Math.pow(1.02, y - 1);
+    const ffeR = tr * (y === 1 ? 0.02 : y === 2 ? 0.03 : 0.04);
+    const noi = gop - mgmt - ins - tax - ffeR;
+    years.push({ y, occ, adr, sold, rooms, fb, other, tr, roomsExp, comm, fbExp, ag, mkt, pom, util, it, gop, mgmt, ins, tax, ffeR, noi });
+  }
+  const y3 = years[2];
+  const value = y3.noi / 0.075;
+  const constant = pmtAnnual(0.066, 25, 1);
+  const perm = Math.max(0, Math.min(0.65 * value, y3.noi / 1.3 / constant));
+  const ds = pmtAnnual(0.066, 25, perm);
+  const refi = perm - loan - perm * 0.01;
+  const cfs = [-equity], un = [-tpc];
+  for (let i = 0; i < 10; i++) {
+    un.push(years[i].noi);
+    if (i < 2) cfs.push(years[i].noi - loan * 0.0725);
+    else if (i === 2) cfs.push(years[i].noi - ds + refi);
+    else cfs.push(years[i].noi - ds);
+  }
+  const g = years[9].noi / years[8].noi;
+  const sale = Math.max(0, years[9].noi * g / 0.075);
+  const bal = balanceAfter(0.066, 25, perm, 8);
+  cfs[10] += sale * 0.98 - bal;
+  un[10] += sale * 0.98;
+  const equityLeft = equity - Math.max(0, refi);
+  return { hard, cont, ffe, ose, tech, ae, permits, reports, legal, liquor, builders, dev, test, franchise, prePayroll, preMkt, inv, wc, deed, title, escrow, taxCarry, tpc, loan, equity, orig, doc, intang, intRes, lenderFlat, years, value, perm, ds, refi, sale, bal, yoc: y3.noi / tpc, lev: irr(cfs), unl: irr(un), coc: (y3.noi - ds) / equityLeft, dscr: y3.noi / ds };
+}
+const RESULTS = CASES.map(c => ({ c, r: run(c) }));
+
+const money = n => (n < 0 ? "-" : "") + "$" + Math.round(Math.abs(n)).toLocaleString("en-US");
+const moneyM = n => (n < 0 ? "-" : "") + "$" + (Math.abs(n) / 1e6).toFixed(1) + "M";
+const pct = (n, d = 1) => (n * 100).toFixed(d) + "%";
+const num = n => Math.round(n).toLocaleString("en-US");
+const esc = s => String(s).replace(/[&<>]/g, ch => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;" }[ch]));
+
+function table(headers, rows, numCols) {
+  const th = headers.map((h, i) => `<th class="${numCols.has(i) ? "num" : ""}">${esc(h)}</th>`).join("");
+  const body = rows.map(row => "<tr>" + row.map((cell, i) => `<td class="${numCols.has(i) ? "num" : ""}">${esc(cell)}</td>`).join("") + "</tr>").join("");
+  return `<div class="scroll"><table><thead><tr>${th}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
+function vbar(cats, vals, opt) {
+  const w = 720, h = 280, L = 46, R = 12, T = 18, B = 46;
+  const max = opt.max;
+  const slot = (w - L - R) / cats.length;
+  let s = `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img">`;
+  for (let t = 0; t <= max; t += opt.step) {
+    const y = B + (h - T - B) * (1 - t / max);
+    s += `<line x1="${L}" y1="${y}" x2="${w - R}" y2="${y}" stroke="#e3dacb"/>`;
+    s += `<text x="${L - 8}" y="${y + 4}" text-anchor="end" font-size="11" fill="#5e584f">${opt.tick(t)}</text>`;
+  }
+  (opt.refs || []).forEach(ref => {
+    const y = B + (h - T - B) * (1 - ref.value / max);
+    s += `<line x1="${L}" y1="${y}" x2="${w - R}" y2="${y}" stroke="${ref.color}" stroke-dasharray="4 4"/>`;
+    s += `<text x="${w - R - 4}" y="${y - 4}" text-anchor="end" font-size="11" fill="${ref.color}">${esc(ref.label)}</text>`;
+  });
+  vals.forEach((v, i) => {
+    const bh = (h - T - B) * (v / max);
+    const x = L + slot * i + (slot - 54) / 2;
+    const y = h - B - bh;
+    s += `<rect x="${x}" y="${y}" width="54" height="${bh}" fill="${opt.colors[i] || "#1b3a4b"}"/>`;
+    s += `<text x="${x + 27}" y="${y - 6}" text-anchor="middle" font-size="12" font-weight="650" fill="#1c2430">${esc(opt.label(v))}</text>`;
+    s += `<text x="${x + 27}" y="${h - 18}" text-anchor="middle" font-size="12" fill="#1c2430">${esc(cats[i])}</text>`;
+  });
+  s += `<text x="8" y="14" font-size="11" fill="#5e584f">${esc(opt.axis)}</text></svg>`;
+  return s;
+}
+function hbar(items) {
+  const w = 720, row = 36, h = 24 + items.length * row;
+  const max = Math.max(...items.map(d => d[1]));
+  let s = `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img">`;
+  items.forEach((d, i) => {
+    const y = 16 + i * row;
+    const bw = 360 * (d[1] / max);
+    s += `<text x="0" y="${y + 16}" font-size="13" fill="#1c2430">${esc(d[0])}</text>`;
+    s += `<rect x="250" y="${y}" width="${bw}" height="20" fill="#1b3a4b"/>`;
+    s += `<text x="${258 + bw}" y="${y + 15}" font-size="13" font-weight="650" fill="#1c2430">${esc(d[2])}</text>`;
+  });
+  return s + "</svg>";
+}
+function lineChart(years) {
+  const w = 720, h = 260, L = 40, R = 12, T = 16, B = 32;
+  const max = 8;
+  const X = i => L + (w - L - R) * (i / 9);
+  const Y = v => T + (h - T - B) * (1 - v / max);
+  let s = `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img">`;
+  for (let t = 0; t <= max; t += 2) {
+    s += `<line x1="${L}" y1="${Y(t)}" x2="${w - R}" y2="${Y(t)}" stroke="#e3dacb"/>`;
+    s += `<text x="${L - 6}" y="${Y(t) + 4}" text-anchor="end" font-size="11" fill="#5e584f">$${t}</text>`;
+  }
+  const poly = (key, color) => {
+    const pts = years.map((y, i) => `${X(i)},${Y(key(y))}`).join(" ");
+    s += `<polyline fill="none" stroke="${color}" stroke-width="2.5" points="${pts}"/>`;
+    years.forEach((y, i) => s += `<circle cx="${X(i)}" cy="${Y(key(y))}" r="3.2" fill="${color}"/>`);
+  };
+  poly(y => Math.round(y.tr / 1e5) / 10, "#1b3a4b");
+  poly(y => Math.round(y.noi / 1e5) / 10, "#2c5c4e");
+  years.forEach((y, i) => s += `<text x="${X(i)}" y="${h - 8}" text-anchor="middle" font-size="11" fill="#5e584f">Y${y.y}</text>`);
+  s += `<rect x="${L}" y="${h - 4}" width="0" height="0"/>`;
+  return s + `</svg><p class="fine"><span style="color:#1b3a4b">●</span> Total revenue &nbsp; <span style="color:#2c5c4e">●</span> NOI &nbsp; $ millions</p>`;
+}
+
+function renderStatic() {
+  document.getElementById("yield-chart").innerHTML = vbar(
+    ["96-key", "72-key", "45-key"],
+    RESULTS.map(x => Math.round(x.r.yoc * 1000) / 10),
+    { max: 12, step: 2, axis: "Yield on cost (%)", colors: ["#2c5c4e", "#1b3a4b", "#8d4638"],
+      tick: t => t + "%", label: v => v.toFixed(1) + "%",
+      refs: [{ value: 7.5, label: "7.5% exit cap", color: "#8a6a32" }, { value: 9, label: "9% hurdle", color: "#2c5c4e" }] }
+  );
+  document.getElementById("compare").innerHTML = table(
+    ["", "96-key lender case", "72-key compromise", "45-key team case"],
+    [
+      ["Keys", "96", "72", "45"],
+      ["Stabilized occupancy", "70%", "66%", "68%"],
+      ["Stabilized ADR", "$225", "$320", "$375"],
+      ["Hard cost per square foot", "$130", "$175", "$250"],
+      ["Total project cost", ...RESULTS.map(x => money(x.r.tpc))],
+      ["Cost per key", ...RESULTS.map(x => money(x.r.tpc / x.c.keys))],
+      ["Stabilized room revenue", ...RESULTS.map(x => money(x.r.years[2].rooms))],
+      ["Stabilized profit (NOI)", ...RESULTS.map(x => money(x.r.years[2].noi))],
+      ["Yield on cost", ...RESULTS.map(x => pct(x.r.yoc))],
+      ["Value at a 7.5% cap", ...RESULTS.map(x => money(x.r.value))],
+      ["Refinance, cash in or out", ...RESULTS.map(x => money(x.r.refi))],
+      ["Levered IRR, 10-year hold", ...RESULTS.map(x => x.r.lev == null ? "n/a" : pct(x.r.lev))]
+    ],
+    new Set([1, 2, 3])
+  );
+  document.getElementById("handoff").innerHTML = table(
+    ["Item", "96 keys", "72 keys", "45 keys"],
+    [
+      ["Year-1 ADR", "$200", "$290", "$340"],
+      ["Year-2 ADR", "$215", "$305", "$360"],
+      ["Stabilized ADR", "$225", "$320", "$375"],
+      ["Occupancy ramp", "58% / 64% / 70%", "53% / 60% / 66%", "55% / 62% / 68%"],
+      ["Stabilized room revenue", ...RESULTS.map(x => money(x.r.years[2].rooms))],
+      ["Year-1 marketing, 10% of rooms", ...RESULTS.map(x => money(x.r.years[0].mkt))],
+      ["Stabilized marketing, 6.5%", ...RESULTS.map(x => money(x.r.years[2].mkt))],
+      ["Stabilized channel cost, 11.7%", ...RESULTS.map(x => money(x.r.years[2].comm))],
+      ["Pre-opening marketing", "$320,000", "$320,000", "$320,000"],
+      ["Planning open date", "October 2028", "October 2028", "October 2028"]
+    ],
+    new Set([1, 2, 3])
+  );
+}
+
+function staffRows(c) {
+  const roomsDay = c.keys * c.occR[2];
+  const hk = Math.max(2, Math.round((roomsDay / (c.keys > 80 ? 13 : 10)) * 10) / 10);
+  const fo = c.keys > 80 ? 5 : 4.5;
+  const eng = c.keys > 80 ? 2 : 1.5;
+  const fb = c.keys > 80 ? 3 : c.keys > 60 ? 2.5 : 2;
+  const load = wage => Math.round(wage * 1.32);
+  const hkPay = load(17.5 * 2080), foPay = load(18 * 2080);
+  const laundry = c.keys > 80 ? 2 : 1.5;
+  return [
+    ["General manager", "1.0", money(load(115000 / 1.32)), "Administration"],
+    ["Assistant manager", "1.0", money(load(72000 / 1.32)), "Rooms"],
+    ["Front desk", fo.toFixed(1), money(foPay * fo), "Rooms"],
+    ["Housekeeping", hk.toFixed(1), money(hkPay * hk), "Rooms"],
+    ["Laundry and public area", laundry.toFixed(1), money(load(16 * 2080) * laundry), "Rooms"],
+    ["Engineering", eng.toFixed(1), money(load(55000 / 1.32) * eng), "Maintenance"],
+    ["Food and beverage", fb.toFixed(1), money(load(17 * 2080) * fb), "Food and beverage"],
+    ["Sales coordinator", "1.0", money(load(52000 / 1.32)), "Marketing"]
+  ];
+}
+function sensitivity(c) {
+  const base = c.adrR[2];
+  return [-40, -20, 0, 20, 40].map(d => {
+    const trial = Object.assign({}, c, { adrR: [c.adrR[0] + d * 0.9, c.adrR[1] + d * 0.95, base + d] });
+    const out = run(trial);
+    return [money(base + d) + (d === 0 ? " (this case)" : ""), money(out.years[2].noi), pct(out.yoc), money(out.refi)];
+  });
+}
+
+function render(id) {
+  const found = RESULTS.find(x => x.c.id === id) || RESULTS[0];
+  const c = found.c, r = found.r;
+  const y1 = r.years[0], y2 = r.years[1], y3 = r.years[2];
+  const good = r.yoc >= 0.09 && r.refi > 0;
+  document.querySelectorAll("#switcher button").forEach(b => b.classList.toggle("on", b.dataset.case === c.id));
+  document.getElementById("note").textContent = c.note;
+  const stats = [
+    [moneyM(r.tpc), "Total project cost", ""],
+    [moneyM(r.equity), "Equity at close, 40%", ""],
+    [moneyM(y3.noi), "Stabilized NOI", good ? "good" : "bad"],
+    [pct(r.yoc), "Yield on cost", good ? "good" : "bad"],
+    [r.lev == null ? "n/a" : pct(r.lev), "Levered IRR, 10 years", good ? "good" : "bad"],
+    [r.unl == null ? "n/a" : pct(r.unl), "Unlevered IRR", ""],
+    [pct(r.coc), "Cash-on-cash after refinance", ""],
+    [moneyM(r.refi), r.refi >= 0 ? "Cash out at refinance" : "Cash still needed at refinance", r.refi >= 0 ? "good" : "bad"]
+  ];
+  document.getElementById("stats").innerHTML = stats.map(([v, l, k]) => `<div class="stat ${k}"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
+
+  const uses = [
+    ["Acquisition", PURCHASE],
+    ["Deed stamps, title, escrow", r.deed + r.title + r.escrow],
+    ["Hard construction", r.hard],
+    ["Hard-cost contingency, 12%", r.cont],
+    ["FF&E, OS&E, technology", r.ffe + r.ose + r.tech],
+    ["Architecture and engineering", r.ae],
+    ["Permits, reports, legal, liquor license", r.permits + r.reports + r.legal + r.liquor],
+    ["Builders risk, testing, development management", r.builders + r.test + r.dev],
+    ["Franchise exit allowance", r.franchise],
+    ["Pre-opening payroll, marketing, inventory", r.prePayroll + r.preMkt + r.inv],
+    ["Working capital", r.wc],
+    ["Property-tax carry, 18 months", r.taxCarry],
+    ["Loan fees, stamps, intangible tax", r.orig + r.doc + r.intang + r.lenderFlat],
+    ["Interest reserve", r.intRes]
+  ];
+  const useBars = [
+    ["Buy", PURCHASE],
+    ["Build", r.hard],
+    ["Contingency", r.cont],
+    ["FF&E and tech", r.ffe + r.ose + r.tech],
+    ["Soft and closing", r.deed + r.title + r.escrow + r.ae + r.permits + r.reports + r.legal + r.liquor + r.builders + r.test + r.dev + r.franchise],
+    ["Pre-open and cash", r.prePayroll + r.preMkt + r.inv + r.wc + r.taxCarry],
+    ["Financing", r.orig + r.doc + r.intang + r.lenderFlat + r.intRes]
+  ].map(d => [d[0], d[1] / 1e6, "$" + (d[1] / 1e6).toFixed(1) + "M"]);
+  const season = [1.206, 1, 0.765, 1.029].map(f => Math.round(c.occR[2] * f * 1000) / 10);
+  const ops = [
+    ["Occupancy", pct(y1.occ, 0), pct(y2.occ, 0), pct(y3.occ, 0)],
+    ["ADR", money(y1.adr), money(y2.adr), money(y3.adr)],
+    ["Rooms sold", num(y1.sold), num(y2.sold), num(y3.sold)],
+    ["Room revenue", money(y1.rooms), money(y2.rooms), money(y3.rooms)],
+    ["Food and beverage", money(y1.fb), money(y2.fb), money(y3.fb)],
+    ["Other income", money(y1.other), money(y2.other), money(y3.other)],
+    ["Total revenue", money(y1.tr), money(y2.tr), money(y3.tr)],
+    ["Rooms expense, ex-commissions", money(y1.roomsExp), money(y2.roomsExp), money(y3.roomsExp)],
+    ["Channel cost of sale", money(y1.comm), money(y2.comm), money(y3.comm)],
+    ["Food and beverage expense", money(y1.fbExp), money(y2.fbExp), money(y3.fbExp)],
+    ["Administrative and general", money(y1.ag), money(y2.ag), money(y3.ag)],
+    ["Marketing", money(y1.mkt), money(y2.mkt), money(y3.mkt)],
+    ["Repairs and maintenance", money(y1.pom), money(y2.pom), money(y3.pom)],
+    ["Utilities", money(y1.util), money(y2.util), money(y3.util)],
+    ["Gross operating profit", money(y1.gop), money(y2.gop), money(y3.gop)],
+    ["Management fee, 3%", money(y1.mgmt), money(y2.mgmt), money(y3.mgmt)],
+    ["Insurance", money(y1.ins), money(y2.ins), money(y3.ins)],
+    ["Property tax and non-ad valorem", money(y1.tax), money(y2.tax), money(y3.tax)],
+    ["FF&E reserve", money(y1.ffeR), money(y2.ffeR), money(y3.ffeR)],
+    ["NOI", money(y1.noi), money(y2.noi), money(y3.noi)]
+  ];
+  const hardRows = c.lines.map(line => [line[0], money(line[1]), money(line[1] * SF)]);
+  hardRows.push(["Hard cost before contingency", money(c.psf), money(r.hard)]);
+  hardRows.push(["Contingency, 12%", "$" + Math.round(c.psf * 0.12), money(r.cont)]);
+  const call = r.refi >= 0
+    ? `<div class="ok"><strong>The construction loan can be refinanced.</strong> Year-3 value supports a permanent loan larger than the construction balance. About ${esc(money(r.refi))} comes back to equity after a 1% refinance cost.</div>`
+    : `<div class="bad"><strong>The construction loan cannot be refinanced on these terms.</strong> Equity would have to write a check of about ${esc(money(Math.abs(r.refi)))}. A 60% loan-to-cost quote is not available on this case if the lender underwrites the same profit.</div>`;
+
+  document.getElementById("detail").innerHTML = `
+    <h2>Where the money goes</h2>
+    <p class="fine">${esc(c.name)}, ${c.keys} keys. Dollars in millions. The interest reserve assumes the loan is about half drawn over 18 months at 7.25%.</p>
+    ${hbar(useBars)}
+    ${table(["Use", "Amount", "Share of cost"], uses.map(u => [u[0], money(u[1]), pct(u[1] / r.tpc)]), new Set([1, 2]))}
+    <p><strong>Total project cost ${esc(money(r.tpc))}.</strong> Sources: equity ${esc(money(r.equity))} and a construction loan of ${esc(money(r.loan))}.</p>
+    <h3>Hard-cost build-up, ${esc(money(c.psf))} per square foot on 40,062 square feet</h3>
+    ${table(["Trade", "$ per sf", "Amount"], hardRows, new Set([1, 2]))}
+    <p class="fine">These are planning allowances for the scope, not bids. The 12% contingency stays in every case because opening the walls of a 1973 motel tends to find old plumbing. Lenders on conversions have been asking for 10–15%.</p>
+    <h2>Operating statement</h2>
+    <p class="fine">After year 3, rate grows at 1.7% a year, the pace in CBRE’s 2026 U.S. hotel outlook. Costs grow at 2.5%. Guest taxes are collected and are not revenue.</p>
+    ${table(["", "Year 1", "Year 2", "Year 3 stabilized"], ops, new Set([1, 2, 3]))}
+    <p class="fine">Channel cost is 14.5% of room revenue in year 1, 13% in year 2, and 11.7% from year 3. Marketing spend is 10%, 8%, and 6.5% of room revenue. Card fees of 2.6% of total revenue sit inside administrative and general.</p>
+    <h3>Revenue and profit, years 1 through 10</h3>
+    ${lineChart(r.years)}
+    <div class="grid2">
+      <div>
+        <h3>Stabilized expense mix</h3>
+        ${hbar([
+          ["Rooms and channels", y3.roomsExp + y3.comm, moneyM(y3.roomsExp + y3.comm)],
+          ["Admin, marketing, upkeep", y3.ag + y3.mkt + y3.pom + y3.util + y3.it, moneyM(y3.ag + y3.mkt + y3.pom + y3.util + y3.it)],
+          ["Fee, insurance, tax, reserve", y3.mgmt + y3.ins + y3.tax + y3.ffeR, moneyM(y3.mgmt + y3.ins + y3.tax + y3.ffeR)],
+          ["Food and beverage", y3.fbExp, moneyM(y3.fbExp)]
+        ])}
+        <p class="fine">Year 3 dollars.</p>
+      </div>
+      <div>
+        <h3>Palm Beach seasonality</h3>
+        <p class="fine">A winter peak, scaled so the four quarters average to this case’s stabilized occupancy. A planning shape, not a STR index.</p>
+        ${vbar(["Jan–Mar","Apr–Jun","Jul–Sep","Oct–Dec"], season, { max: 100, step: 20, axis: "Occupancy (%)", colors: ["#1b3a4b","#1b3a4b","#1b3a4b","#1b3a4b"], tick: t => t + "%", label: v => Math.round(v) + "%" })}
+      </div>
+    </div>
+    <h2>Debt</h2>
+    <p>The construction loan is 60% of cost, interest-only at 7.25%. At the start of year 3 it is taken out by a permanent mortgage at 6.60%, 25-year amortization, sized to the lesser of 65% of the 7.5% cap value and a 1.30× coverage test.</p>
+    ${table(["Item", "Amount"], [
+      ["Construction loan at close", money(r.loan)],
+      ["Interest reserve funded in the budget", money(r.intRes)],
+      ["Interest-only debt service, years 1 and 2", money(r.loan * 0.0725)],
+      ["Stabilized value at a 7.5% cap", money(r.value)],
+      ["Permanent loan", money(r.perm)],
+      ["Annual principal and interest", money(r.ds)],
+      ["Coverage on year-3 NOI", r.dscr.toFixed(2) + "x"],
+      ["Refinance proceeds after 1% cost", money(r.refi)],
+      ["Loan balance at a year-10 sale", money(r.bal)],
+      ["Gross sale price on forward profit", money(r.sale)]
+    ], new Set([1]))}
+    ${call}
+    <h2>People this profit is built to cover</h2>
+    <p class="fine">Headcount for the stabilized year. These dollars are already inside the operating statement. Loaded cost includes a 32% burden. Florida’s minimum wage is $15 as of September 30, 2026.</p>
+    ${table(["Role", "FTE", "Loaded annual", "Where it sits"], staffRows(c), new Set([1, 2]))}
+    <p class="fine">The 3% management fee assumes a manager who runs revenue management, accounting, and payroll. Benefits stay in the hotel’s payroll burden. An incentive fee is not in the profit.</p>
+    <h2>Property tax</h2>
+    <p>A sale resets Florida’s 10% non-homestead cap, so the 2023 county total of $6,364,638 is not the bill after closing. During the 18-month project, tax carry uses the $9.8 million purchase price. Once the hotel is open, tax uses a renovated just-value estimate of ${esc(money(c.taxable))}, plus tangible property on the FF&E above the $25,000 exemption, plus $10,000 of non-ad valorem charges.</p>
+    ${table(["Authority", "Mills"], [
+      ["Village of North Palm Beach", "7.4000"],
+      ["Palm Beach County operating", "4.5000"],
+      ["County debt", "0.0330"],
+      ["Fire Rescue", "3.4581"],
+      ["Library", "0.5491"],
+      ["School Board, state", "3.0730"],
+      ["School Board, local", "3.2480"],
+      ["Children’s Services Council", "0.4908"],
+      ["Health Care District", "0.6561"],
+      ["Working total", "23.4081"]
+    ], new Set([1]))}
+    <p class="fine">Confirm the parcel TRIM notice. A November payment can earn up to a 4% discount. The model does not take it.</p>
+    <h2>If the rate moves</h2>
+    <p class="fine">Same case and same cost. Occupancy stays at the stabilized rate. Only the stabilized ADR changes.</p>
+    ${table(["Stabilized ADR", "NOI", "Yield on cost", "Refinance cash"], sensitivity(c), new Set([1, 2, 3]))}
+  `;
+  history.replaceState(null, "", "#" + c.id);
+}
+
+document.getElementById("switcher").addEventListener("click", e => {
+  const btn = e.target.closest("button");
+  if (btn) render(btn.dataset.case);
+});
+renderStatic();
+const start = ["keep", "mid", "team"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "keep";
+render(start);
+</script>
+</body>
+</html>
