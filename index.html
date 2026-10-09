@@ -89,6 +89,19 @@
     cursor: pointer;
   }
   button.on { background: var(--navy); color: #fbf8f2; }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+  .tabs button { border-radius: 8px; }
+  .matrix { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0 14px; }
+  .matrix th, .matrix td { border: 1px solid var(--line); text-align: center; padding: 8px 6px; }
+  .matrix button {
+    border: 0; background: transparent; color: inherit; padding: 0;
+    width: 100%; font-size: 13px; line-height: 1.35; border-radius: 0; cursor: pointer;
+  }
+  .matrix td.clear { background: #e4f0ea; }
+  .matrix td.refi { background: #f7f1e4; }
+  .matrix td.no { background: #f7ebe8; }
+  .matrix td.pick { outline: 2px solid var(--navy); outline-offset: -2px; }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 12px; }
   .stats {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -133,13 +146,18 @@
 <header>
   <p class="kicker">North Palm Beach · working model · October 2026</p>
   <h1>The Arthur</h1>
-  <p class="lede">Three ways to underwrite the same motel. The buttons change the case. The comparison at the top stays put, because that is the decision.</p>
-  <div class="warn">
-    <strong>The 45-key case does not clear a normal development test.</strong>
-    A studs-out rebuild at the marketing plan’s 68% occupancy and $375 rate costs about $27.9 million and earns about $1.3 million of stabilized profit. That is a 4.7% yield, and the permanent loan comes up about $5.5 million short. The case a lender can take is 96 keys.
+  <p class="lede">Two views of the same motel. The first is the original three cases. The second tests 50, 55, and 60 larger rooms, with money set aside so a restaurant and bar can be added later.</p>
+  <div class="tabs" id="tabs">
+    <button type="button" data-tab="original" class="on">Original three cases</button>
+    <button type="button" data-tab="phase1">Phase 1 test · 50 to 60 keys</button>
   </div>
 </header>
 <main>
+<section id="view-original">
+  <div class="warn">
+    <strong>The 45-key case does not clear a normal development test.</strong>
+    A studs-out rebuild at the marketing plan’s 68% occupancy and $375 rate costs about $27.9 million and earns about $1.3 million of stabilized profit. That is a 4.7% yield, and the permanent loan comes up about $5.5 million short. The case a lender can take on this tab is 96 keys. The other tab asks whether 50, 55, or 60 larger rooms can work if the building also keeps a bay for a future restaurant.
+  </div>
   <h2>Yield on cost</h2>
   <p class="fine">Stabilized profit divided by total project cost. The exit cap used to value the hotel is 7.5%. The development hurdle used here is 9%.</p>
   <div id="yield-chart"></div>
@@ -159,6 +177,28 @@
   <p class="fine">These figures do not change when you switch cases. They are all three answers, side by side, for marketing and operations.</p>
   <div class="scroll" id="handoff"></div>
   <p class="fine">Guest checkout for one night, with the marketing plan’s 6% tourist tax and 6.5% sales tax added together and no resort fee: $253.13 at $225, $360.00 at $320, and $421.88 at $375. Planning open date is October 2028, assuming a closing in early 2027 and an 18-month project.</p>
+</section>
+
+<section id="view-phase1" hidden>
+  <div class="warn">
+    <strong>This tab answers the note on room count and the future restaurant.</strong>
+    The 45-room idea was larger rooms and suites, more amenities, and space held back for a high-end restaurant and bar. This test stays on that idea and tries 50, 55, and 60 keys. It does not jump to 72 or 96. About 5,500 square feet, roughly 14% of the building, is left as a warm shell. Phase 1 pays for that shell. The shell earns nothing until a later phase fits it out.
+  </div>
+  <h2>What Phase 1 food and beverage is</h2>
+  <p>Phase 1 includes an in-house breakfast and a small lobby coffee and wine pour for guests. It is modeled at 7% of room revenue, and it costs about 75 cents of every dollar it brings in, because it is an amenity. It does not include lunch, dinner, a public bar, or spending from neighbors. Local recurring restaurant revenue is not in these figures. If the concept needs that income to survive, it belongs in a Phase 2 model with the kitchen, the license, and the staff that go with it. The survey, 78 responses so far, is not in this model. It can inform demand after it reaches 100.</p>
+  <h2>What “works” means here</h2>
+  <p>A cell <strong>clears</strong> when stabilized profit is at least 9% of total cost and the permanent loan can repay the construction loan. A cell <strong>refinances</strong> when the loan can be repaid but the yield is under 9%. A cell is <strong>short</strong> when equity would have to write another check at year 3. Click a cell to open its statement.</p>
+  <div class="controls" id="phase-rate">
+    <button type="button" data-mode="design" class="on">Hold the $375 design rate</button>
+    <button type="button" data-mode="step">Step the rate down as keys rise</button>
+  </div>
+  <p class="fine" id="phase-rate-note"></p>
+  <div id="phase-matrices"></div>
+  <h2 id="phase-title">Selected combination</h2>
+  <p id="phase-note"></p>
+  <div class="stats" id="phase-stats"></div>
+  <div id="phase-detail"></div>
+</section>
 
   <details>
     <summary>Sources, and what is still a guess</summary>
@@ -167,7 +207,7 @@
     <h3>Market, debt, tax, insurance</h3>
     <p>CBRE midyear 2026 U.S. hotel outlook: occupancy 62.8%, ADR growth 1.7%. CBRE’s South Florida note: West Palm Beach 2025 RevPAR about flat. Construction pricing sits in the September 2026 bank and debt-fund range of about 6.25% to 8.75% at 55% to 70% of cost. The 7.5% cap is inside the 2026 select-service Sun Belt band of roughly 7.25% to 8.75%. Insurance uses $1.10 per $100 of insured value, between published inland and coastal Florida ranges. Millage totals 23.4081 from Palm Beach County’s 2025 final and 2026 proposed rates, including the village at 7.4000, county, fire, library, both school levies, Children’s Services at 0.4908, and the Health Care District at 0.6561. Deed stamps are $0.70 per $100. Mortgage stamps are $0.35 per $100. Intangible tax is 0.2%.</p>
     <h3>Still a guess</h3>
-    <p>The seller’s price and trailing profit. A building-condition report. The flood-zone letter on FEMA panel 12099C0383F. Any Wyndham termination fee, modeled at $350,000. A liquor license, modeled at $150,000. Contractor bids. Whether the village requires a lift. A rate audit of Jupiter Beach Resort, Wyndham Grand Jupiter, The Pointe, Hampton Inn Jupiter/Juno Beach, and Holiday Inn Express North Palm Beach.</p>
+    <p>The seller’s price and trailing profit. A building-condition report. The flood-zone letter on FEMA panel 12099C0383F. Any Wyndham termination fee, modeled at $350,000. A full liquor license, modeled at $150,000 on the original cases and at $25,000 on the Phase 1 test, where only beer and wine are assumed until the restaurant opens. Contractor bids. Whether the village requires a lift. A rate audit of Jupiter Beach Resort, Wyndham Grand Jupiter, The Pointe, Hampton Inn Jupiter/Juno Beach, and Holiday Inn Express North Palm Beach. The 5,500 square foot restaurant shell is a planning area, not an architect’s plan.</p>
   </details>
 </main>
 <footer>
@@ -222,16 +262,17 @@ function irr(cfs) {
   return rate;
 }
 function run(p) {
-  const hard = p.psf * SF, cont = hard * 0.12;
+  const purchase = p.purchase || PURCHASE;
+  const hard = p.hard != null ? p.hard : p.psf * SF, cont = hard * 0.12;
   const ffe = p.ffePerKey * p.keys + p.pubFFE, ose = 3200 * p.keys, tech = 160000 + 700 * p.keys;
-  const ae = hard * 0.075, permits = 150000, reports = 90000, legal = 150000, liquor = 150000;
+  const ae = hard * 0.075, permits = 150000, reports = 90000, legal = 150000, liquor = p.liquor != null ? p.liquor : 150000;
   const builders = (hard + cont) * 0.011, dev = 180000, test = 40000, franchise = 350000;
   const prePayroll = 160000, preMkt = 320000, inv = 1800 * p.keys, wc = 350000;
-  const deed = PURCHASE * 0.007;
-  const title = 575 + 4500 + 10000 + Math.max(0, PURCHASE - 5000000) / 1000 * 2.25;
+  const deed = purchase * 0.007;
+  const title = 575 + 4500 + 10000 + Math.max(0, purchase - 5000000) / 1000 * 2.25;
   const escrow = 8000;
-  const taxCarry = PURCHASE * MILL / 1000 * (18 / 12);
-  const C = PURCHASE + deed + title + escrow + hard + cont + ffe + ose + tech + ae + permits + reports + legal + liquor + builders + dev + test + franchise + prePayroll + preMkt + inv + wc + taxCarry;
+  const taxCarry = purchase * MILL / 1000 * (18 / 12);
+  const C = purchase + deed + title + escrow + hard + cont + ffe + ose + tech + ae + permits + reports + legal + liquor + builders + dev + test + franchise + prePayroll + preMkt + inv + wc + taxCarry;
   const intFactor = 0.5 * 0.0725 * (18 / 12);
   const finRate = 0.01 + 0.0035 + 0.002 + intFactor;
   const lenderFlat = 35000;
@@ -583,6 +624,170 @@ document.getElementById("switcher").addEventListener("click", e => {
 renderStatic();
 const start = ["keep", "mid", "team"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "keep";
 render(start);
+
+const SHELL_SF = 5500, HOTEL_SF = SF - SHELL_SF, SHELL_PSF = 160;
+const PHASE_KEYS = [50, 55, 60];
+const PHASE_BUYS = [8500000, 9800000, 11500000];
+const PHASE_PSF = [180, 210, 240];
+let phaseMode = "design";
+let phasePick = { keys: 55, purchase: 9800000, psf: 210 };
+
+function phaseCase(keys, purchase, psf, mode) {
+  const design = mode === "design";
+  const occ = design ? 0.68 : (keys === 50 ? 0.67 : keys === 55 ? 0.66 : 0.65);
+  const adr = design ? 375 : (keys === 50 ? 360 : keys === 55 ? 350 : 340);
+  const hard = HOTEL_SF * psf + SHELL_SF * SHELL_PSF;
+  return {
+    id: "phase",
+    phase: true,
+    name: keys + "-key Phase 1 test",
+    keys, psf, purchase, hard,
+    ffePerKey: keys === 50 ? 33000 : keys === 55 ? 31000 : 29000,
+    pubFFE: 380000,
+    occR: [0.55, 0.62, occ],
+    adrR: [Math.round(adr * 0.91), Math.round(adr * 0.96), adr],
+    fb: 0.07,
+    fbCost: 0.75,
+    por: keys === 50 ? 70 : keys === 55 ? 66 : 62,
+    tiv: 13000000,
+    taxable: Math.round(purchase * 0.5 + hard * 0.4),
+    liquor: 25000,
+    note: keys + " larger keys, with " + SHELL_SF.toLocaleString("en-US") + " square feet held as a restaurant and bar shell. Hotel area left for keys, lobby, and back of house is " + HOTEL_SF.toLocaleString("en-US") + " square feet, about " + Math.round(HOTEL_SF / keys) + " square feet per key. The existing motel is about " + Math.round(SF / 109) + " square feet per key. Purchase is " + money(purchase) + " and the hotel-area renovation is " + money(psf) + " per square foot, plus the shell."
+  };
+}
+function phaseResult(keys, purchase, psf, mode) {
+  const c = phaseCase(keys, purchase, psf, mode);
+  return { c, r: run(c) };
+}
+function phaseFlag(r) {
+  if (r.yoc >= 0.09 && r.refi > 0) return "clear";
+  if (r.refi > 0) return "refi";
+  return "no";
+}
+function phaseWord(flag) {
+  return flag === "clear" ? "Clears" : flag === "refi" ? "Refinances" : "Short";
+}
+
+function renderPhaseMatrices() {
+  const note = phaseMode === "design"
+    ? "Every cell uses the marketing plan’s stabilized rate: 68% occupancy and $375. Year 1 and year 2 step up to that rate. This isolates room count and cost."
+    : "The rate steps down as the key count rises: 50 keys at $360, 55 at $350, and 60 at $340. Occupancy eases from 67% to 65%. More rooms of the same building have to share the same demand.";
+  document.getElementById("phase-rate-note").textContent = note;
+  document.querySelectorAll("#phase-rate button").forEach(b => b.classList.toggle("on", b.dataset.mode === phaseMode));
+  document.getElementById("phase-matrices").innerHTML = PHASE_KEYS.map(keys => {
+    const head = `<tr><th>${keys} keys</th>${PHASE_BUYS.map(b => `<th>${moneyM(b)} purchase</th>`).join("")}</tr>`;
+    const body = PHASE_PSF.map(psf => {
+      const cells = PHASE_BUYS.map(purchase => {
+        const out = phaseResult(keys, purchase, psf, phaseMode);
+        const flag = phaseFlag(out.r);
+        const picked = phasePick.keys === keys && phasePick.purchase === purchase && phasePick.psf === psf;
+        return `<td class="${flag}${picked ? " pick" : ""}"><button type="button" data-keys="${keys}" data-buy="${purchase}" data-psf="${psf}">${money(psf)}/sf<br>${pct(out.r.yoc)}<br>${phaseWord(flag)}</button></td>`;
+      }).join("");
+      return `<tr><th>${money(psf)} / sf</th>${cells}</tr>`;
+    }).join("");
+    return `<h3>${keys} keys · about ${Math.round(HOTEL_SF / keys)} sf of hotel area per key</h3><table class="matrix"><thead>${head}</thead><tbody>${body}</tbody></table>`;
+  }).join("");
+}
+
+function renderPhase() {
+  renderPhaseMatrices();
+  const found = phaseResult(phasePick.keys, phasePick.purchase, phasePick.psf, phaseMode);
+  const c = found.c, r = found.r;
+  const y1 = r.years[0], y2 = r.years[1], y3 = r.years[2];
+  const good = phaseFlag(r) === "clear";
+  document.getElementById("phase-title").textContent = c.keys + " keys · " + moneyM(c.purchase) + " purchase · " + money(c.psf) + " per square foot";
+  document.getElementById("phase-note").textContent = c.note;
+  const stats = [
+    [moneyM(r.tpc), "Total project cost", ""],
+    [moneyM(y3.noi), "Stabilized NOI", good ? "good" : "bad"],
+    [pct(r.yoc), "Yield on cost", good || phaseFlag(r) === "refi" ? "good" : "bad"],
+    [moneyM(r.refi), r.refi >= 0 ? "Cash out at refinance" : "Cash still needed at refinance", r.refi >= 0 ? "good" : "bad"],
+    [r.lev == null ? "n/a" : pct(r.lev), "Levered IRR, 10 years", good ? "good" : ""],
+    [money(y3.adr), "Stabilized ADR", ""],
+    [pct(y3.occ, 0), "Stabilized occupancy", ""],
+    [money(y3.fb), "Phase 1 food and beverage", ""]
+  ];
+  document.getElementById("phase-stats").innerHTML = stats.map(([v, l, k]) => `<div class="stat ${k}"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
+  const hotelHard = HOTEL_SF * c.psf;
+  const shellHard = SHELL_SF * SHELL_PSF;
+  const uses = [
+    ["Acquisition", c.purchase],
+    ["Deed stamps, title, escrow", r.deed + r.title + r.escrow],
+    ["Hotel-area renovation", hotelHard],
+    ["Restaurant and bar shell", shellHard],
+    ["Hard-cost contingency, 12%", r.cont],
+    ["FF&E, OS&E, technology", r.ffe + r.ose + r.tech],
+    ["Architecture, permits, legal, beer and wine license", r.ae + r.permits + r.reports + r.legal + r.liquor],
+    ["Builders risk, testing, development management", r.builders + r.test + r.dev],
+    ["Franchise exit allowance", r.franchise],
+    ["Pre-opening, inventory, working capital", r.prePayroll + r.preMkt + r.inv + r.wc],
+    ["Property-tax carry, 18 months", r.taxCarry],
+    ["Loan fees and interest reserve", r.orig + r.doc + r.intang + r.lenderFlat + r.intRes]
+  ];
+  const call = r.refi >= 0
+    ? `<div class="${good ? "ok" : "warn"}"><strong>${good ? "This combination clears the 9% hurdle and refinances." : "This combination refinances, and the yield stays under 9%."}</strong> About ${esc(money(r.refi))} comes back to equity after a 1% refinance cost. Yield on cost is ${esc(pct(r.yoc))}.</div>`
+    : `<div class="bad"><strong>This combination is short at refinance.</strong> Equity would have to add about ${esc(money(Math.abs(r.refi)))} at year 3. Yield on cost is ${esc(pct(r.yoc))}.</div>`;
+  const ops = [
+    ["Occupancy", pct(y1.occ, 0), pct(y2.occ, 0), pct(y3.occ, 0)],
+    ["ADR", money(y1.adr), money(y2.adr), money(y3.adr)],
+    ["Room revenue", money(y1.rooms), money(y2.rooms), money(y3.rooms)],
+    ["Phase 1 food and beverage", money(y1.fb), money(y2.fb), money(y3.fb)],
+    ["Other income", money(y1.other), money(y2.other), money(y3.other)],
+    ["Total revenue", money(y1.tr), money(y2.tr), money(y3.tr)],
+    ["Food and beverage expense", money(y1.fbExp), money(y2.fbExp), money(y3.fbExp)],
+    ["NOI", money(y1.noi), money(y2.noi), money(y3.noi)]
+  ];
+  document.getElementById("phase-detail").innerHTML = `
+    ${call}
+    <h3>Where this combination spends the money</h3>
+    <p class="fine">The restaurant shell is in the Phase 1 budget at ${esc(money(SHELL_PSF))} per square foot. Kitchen equipment, dining-room furniture, a quota liquor license, and restaurant staff are not. Those wait for Phase 2.</p>
+    ${table(["Use", "Amount", "Share of cost"], uses.map(u => [u[0], money(u[1]), pct(u[1] / r.tpc)]), new Set([1, 2]))}
+    <p><strong>Total project cost ${esc(money(r.tpc))}.</strong> Equity ${esc(money(r.equity))}. Construction loan ${esc(money(r.loan))}.</p>
+    <h3>Phase 1 operating snapshot</h3>
+    <p class="fine">Food and beverage here is breakfast and a lobby pour, at 7% of room revenue. Guest taxes are not revenue. The same channel, marketing, management, tax, and insurance rules as the other tab apply underneath the profit line.</p>
+    ${table(["", "Year 1", "Year 2", "Year 3"], ops, new Set([1, 2, 3]))}
+    ${lineChart(r.years)}
+    ${table(["Item", "Amount"], [
+      ["Stabilized room revenue", money(y3.rooms)],
+      ["Phase 1 food and beverage revenue", money(y3.fb)],
+      ["Phase 1 food and beverage expense", money(y3.fbExp)],
+      ["Construction loan", money(r.loan)],
+      ["Permanent loan", money(r.perm)],
+      ["Refinance proceeds after 1% cost", money(r.refi)],
+      ["Value at a 7.5% cap", money(r.value)]
+    ], new Set([1]))}
+  `;
+}
+
+function showTab(tab) {
+  document.getElementById("view-original").hidden = tab !== "original";
+  document.getElementById("view-phase1").hidden = tab !== "phase1";
+  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
+  if (tab === "phase1") {
+    renderPhase();
+    history.replaceState(null, "", "#phase1");
+  } else if (!["keep", "mid", "team"].includes(location.hash.slice(1))) {
+    history.replaceState(null, "", "#keep");
+  }
+}
+document.getElementById("tabs").addEventListener("click", e => {
+  const btn = e.target.closest("button");
+  if (btn) showTab(btn.dataset.tab);
+});
+document.getElementById("phase-rate").addEventListener("click", e => {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+  phaseMode = btn.dataset.mode;
+  renderPhase();
+});
+document.getElementById("phase-matrices").addEventListener("click", e => {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+  phasePick = { keys: Number(btn.dataset.keys), purchase: Number(btn.dataset.buy), psf: Number(btn.dataset.psf) };
+  renderPhase();
+  document.getElementById("phase-title").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+if (location.hash === "#phase1") showTab("phase1");
 </script>
 </body>
 </html>
